@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, fs } from './Config';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import { Navbar } from './Navbar';
 
 const Signup = () => {
   const [fullName, setFullName] = useState('');
@@ -14,12 +17,15 @@ const Signup = () => {
     e.preventDefault();
 
     // Name validation: Only alphabets and minimum length of 3
-    const nameRegex = /^[A-Za-z]{3,}$/;
+    const nameRegex = /^[A-Za-z]{3,}(?:\s[A-Za-z]+)?$/;
+
+
     if (!fullName || !fullName.match(nameRegex)) {
-      setErrorMsg('Please enter a valid name (minimum 3 alphabets, only alphabets allowed).');
+      setErrorMsg(
+        'Please enter a valid name (minimum 3 characters, only alphabets and spaces allowed).'
+      );
       return;
     }
-
     // Email validation: Correct format
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/;
     if (!email || !email.match(emailRegex)) {
@@ -30,19 +36,24 @@ const Signup = () => {
     // Password validation: At least 8 characters, at least one uppercase letter, one lowercase letter, one number, and one special character
     const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
     if (!password || !password.match(passwordRegex)) {
-      setErrorMsg('Please enter a valid password (at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character).');
+      setErrorMsg(
+        'Please enter a valid password (at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character).'
+      );
       return;
     }
 
     auth
       .createUserWithEmailAndPassword(email, password)
       .then((cred) => {
+        const createdAt = firebase.firestore.Timestamp.fromDate(new Date()); // Get the current timestamp
+
         fs.collection('SignedUpUsers')
           .doc(cred.user.uid)
           .set({
             Name: fullName,
             Email: email,
             Password: password,
+            CreatedAt: createdAt, // Add the created at time to the data
           })
           .then(() => {
             setSuccessMsg('Signup successful, redirecting to login');
@@ -61,7 +72,11 @@ const Signup = () => {
   };
 
   return (
+    <div>
+    <Navbar  />
     <div className="container">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
       <br />
       <br />
       <h1>Signup</h1>
@@ -73,7 +88,7 @@ const Signup = () => {
           type="text"
           className="form-control"
           required
-          pattern="[A-Za-z]{3,}"
+          pattern="[A-Za-z ]{3,}"
           title="Please enter a valid name (minimum 3 alphabets, only alphabets allowed)."
           onChange={(e) => setFullName(e.target.value)}
           value={fullName}
@@ -110,6 +125,9 @@ const Signup = () => {
       </form>
       {errorMsg && <div className="error-msg">{errorMsg}</div>}
     </div>
+    </div>
+      </div>
+      </div>
   );
 };
 

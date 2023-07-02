@@ -23,18 +23,19 @@ export const Navbar = ({ user, totalProducts }) => {
       <div className='leftside'>
         <div className='logo' onClick={handleLogoClick}>
           <img src={logo} alt='logo' />
+          <span className='brand-name'>Ez- Shop</span>
         </div>
       </div>
       <div className='rightside'>
         {!user && (
           <>
             <div>
-              <Link className='navlink' to='signup'>
+              <Link className='navlink' to='/signup'>
                 SIGN UP
               </Link>
             </div>
             <div>
-              <Link className='navlink' to='login'>
+              <Link className='navlink' to='/login'>
                 LOGIN
               </Link>
             </div>

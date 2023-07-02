@@ -1,0 +1,36 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+// Parent component listing the products
+const ProductList = ({ products }) => {
+  return (
+    <div>
+      {products.map((product) => (
+        <div key={product.id}>
+          <h3>{product.name}</h3>
+          <Link to={`/products/${product.id}`}>View Details</Link>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Product page component
+const ProductPage = ({ match, products }) => {
+  const productId = match.params.id;
+  const product = products.find((p) => p.id === productId);
+
+  if (!product) {
+    return <div>Product not found</div>;
+  }
+
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      {/* Additional product details */}
+    </div>
+  );
+};
+
+export default ProductList;

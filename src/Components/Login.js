@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from './Config';
-
+import { Navbar } from './Navbar';
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +41,12 @@ export const Login = () => {
   };
 
   return (
+    <div>
+      <Navbar/>
+    
     <div className="container">
+    <div className="row justify-content-center">
+        <div className="col-md-6">
       <br />
       <br />
       <h1>Login</h1>
@@ -77,6 +82,9 @@ export const Login = () => {
           </button>
         </div>
       </form>
+      </div>
+    </div>
+    </div>
     </div>
   );
 };
