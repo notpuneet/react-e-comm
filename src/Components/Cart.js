@@ -2,10 +2,8 @@ import React, { useState, useEffect } from "react";
 import { auth, fs } from "./Config";
 import { Navbar } from "./Navbar";
 import { CartProducts } from "./CartProducts";
-import { IndividualCartProduct } from "./IndividualCartProduct";
-import StripeCheckout from "react-stripe-checkout";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -108,6 +106,8 @@ const Cart = () => {
     (total, cartProduct) => total + cartProduct.TotalProductPrice,
     0
   );
+  let totalPriceInDollar = totalPrice * 0.01369;
+  totalPriceInDollar = totalPriceInDollar.toFixed(2);
   // state of totalProducts
   const [totalProducts, setTotalProducts] = useState(0);
   // getting cart products
@@ -123,13 +123,33 @@ const Cart = () => {
   }, []);
   const navigate = useNavigate();
   //CHARGING PAYMENT
-  const handleToken = async (token) => {
+  /* const handleToken = async (token) => {
     //  console.log(token);
     const cart = { name: "All Products", totalPrice };
-    const response = await axios.post("http://localhost:8080/checkout", {
-      token,
-      cart,
-    });
+    const data ={  
+      merchantId:"M2306160483220675579140",
+      transactionId:"TX123456789",
+      merchantUserId:"U123456789",
+      amount:100,
+      merchantOrderId:"OD1234",
+      mobileNumber:"9xxxxxxxxx",
+      message:"payment for order placed OD1234",
+      subMerchant:"DemoMerchant",
+      email:"amit***75@gmail.com",
+      shortName:"Amit"
+   }
+    // const response = await axios.post("https://mercury-uat.phonepe.com/v4/debit/", {
+    //   token,
+    //   data,
+    // });
+
+    const response = await axios({
+      method: 'post',
+      url:"https://mercury-uat.phonepe.com/v4/debit/",
+      params:{
+       data:data,
+      }
+  });
     console.log(response);
     let { status } = response.data;
     console.log(status);
@@ -156,7 +176,60 @@ const Cart = () => {
     } else {
       alert("Something went wrong in checkout");
     }
+  }; */
+
+  const handlePaymentApproval = async (details) => {
+    console.log(details);
+    // Empty the cart
+    const uid = auth.currentUser.uid;
+    const carts = await fs.collection("Cart " + uid).get();
+    for (var snap of carts.docs) {
+      await fs
+        .collection("Cart " + uid)
+        .doc(snap.id)
+        .delete();
+    }
+
+    toast.success(
+      "Your order has been placed successfully, Redirecting to home",
+      {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+        progress: undefined,
+      }
+    );
+    // Check if the details object and id property are defined
+    if (details && details.id) {
+      // Store the payment data to Firebase database
+      const uid = auth.currentUser.uid;
+      const paymentData = {
+        orderId: details.id,
+        payerName: details.payer.name.given_name,
+        payerEmail: details.payer.email_address,
+        amount: details.purchase_units[0].amount.value,
+        timestamp: new Date().toISOString(),
+      };
+
+      try {
+        await fs.collection("Payments").add(paymentData);
+        console.log("Payment data stored to Firebase database");
+      } catch (error) {
+        console.log("Error storing payment data:", error);
+      }
+
+      // Navigate to the home page after 4 seconds
+      setTimeout(() => {
+        navigate("/");
+      }, 4000);
+    } else {
+      console.log("Invalid payment details");
+    }
   };
+
   return (
     <>
       <Navbar user={user} totalProducts={totalProducts} />
@@ -175,21 +248,41 @@ const Cart = () => {
           <div className="summary-box">
             <h5>Cart Summary</h5>
             <br />
-            <hr></hr>Total No of Products:  &nbsp; &nbsp;&nbsp;&nbsp;{totalQty}<hr></hr>
+            <hr></hr>Total No of Products: &nbsp; &nbsp;&nbsp;&nbsp;{totalQty}
+            <hr></hr>
             <div>
               Total Price to Pay: <span>Rs {totalPrice}</span>
             </div>
             <br />
-            {
-              <StripeCheckout
-                stripeKey="pk_test_51NN9SQSDwXLKprWdR5YoV0TDeFXd5uY5am9fFJ3z1xvRrWMz8y7Ju6FiL0JKX94qjvciBGSi1TwslspLMPMETNNc00f6l1bft2"
-                token={handleToken}
-                billingAddress
-                shippingAddress
-                name="All Products"
-                amount={totalPrice * 100}
-              ></StripeCheckout>
-            }
+            {console.log(totalPriceInDollar)}
+            {totalPriceInDollar && (
+              <PayPalScriptProvider
+                options={{
+                  clientId:
+                    "AZzkLoj7xUQcmi7PCCyE71iDgnKPmSqnyZnoKZ_dJGA9BC7ngGF0fys-psGPKycemgsV_egnD2X_0ctX",
+                }}
+              >
+                <PayPalButtons
+                  createOrder={(data, actions) => {
+                    return actions.order.create({
+                      purchase_units: [
+                        {
+                          amount: {
+                            value: totalPriceInDollar,
+                          },
+                        },
+                      ],
+                    });
+                  }}
+                  onApprove={async (details, actions) => {
+                    return actions.order.capture().then(async (details) => {
+                      // Navigate to the home page
+                      handlePaymentApproval(details);
+                    });
+                  }}
+                />
+              </PayPalScriptProvider>
+            )}
           </div>
         </div>
       )}
@@ -202,3 +295,4 @@ const Cart = () => {
 };
 
 export default Cart;
+ 

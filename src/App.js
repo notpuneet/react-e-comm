@@ -8,6 +8,7 @@ import { Login } from './Components/Login';
 import { NotFound } from './Components/NotFound';
 import { AddProducts } from './Components/AddProducts';
 import Cart from './Components/Cart';
+import ProductPage from './Components/ProductPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="login" element={<Login/>} />
         <Route path='add-products' Component={AddProducts}></Route>
         <Route path='cart' Component={Cart}></Route>
+        <Route path="/product/:productID" element={<ProductPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
